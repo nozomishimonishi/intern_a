@@ -1,4 +1,5 @@
 """
+複雑なメールを処理しようとするとエラーが起こります❤︎
 Send E-Mail with GMail.
 
 Usage:
@@ -12,6 +13,7 @@ Options:
   --attach_file_path=<file_path>     Path of file attached to message.
   --cc=<cc>     cc email address list(separated by ','). Default None.
 """
+from email.mime.application import MIMEApplication
 import pickle
 import os.path
 from googleapiclient.discovery import build
@@ -42,6 +44,7 @@ import os
 from unicodedata import name
 import img2pdf
 from PIL import Image
+import os.path
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +85,7 @@ def list_message(service, user_id): #listmailから
                 .get(userId="me", id=message_id["id"])
                 .execute()
             )
-            # print(message_detail)
+            #print(message_detail)
             message = {}
             message["id"] = message_id["id"] #メッセージのidを取得
             # 単純なテキストメールの場合
@@ -90,6 +93,8 @@ def list_message(service, user_id): #listmailから
                 message["body"] = decode_base64url_data(
                     message_detail["payload"]["body"]["data"]
                 )
+            # partsの中のmimeTypeがalternativeの場合も対応させる。
+
             # html メールの場合、plain/text のパートを使う
             else:
                 parts = message_detail['payload']['parts']
@@ -135,9 +140,9 @@ def remove_labels(service, user_id, messages, remove_labels): #listmailから
     except errors.HttpError as error:
         print("An error occurred: %s" % error)
 
-def convert2pdf(output,input): #pngをpdfに変換する
-    with open(output,"wb") as f:
-        f.write(img2pdf.convert(input))
+def convert2pdf(output_pdf,input_png1,input_png2): #pngをpdfに変換する
+    with open(output_pdf,"wb") as f:
+        f.write(img2pdf.convert([input_png1, input_png2]))
 
 def create_message(sender, to, subject, message_text, cc=None):
     """
@@ -185,6 +190,9 @@ def create_message_with_attachment(
     elif main_type == "audio":
         with open(file_path, "rb") as fp:
             msg = MIMEAudio(fp.read(), _subtype=sub_type)
+    elif main_type == "application": #PDFを添付するため
+        with open(file_path, "rb") as fp:
+            msg = MIMEApplication(fp.read(), _subtype=sub_type)
     else:
         with open(file_path, "rb") as fp:
             msg = MIMEBase(main_type, sub_type)
@@ -236,21 +244,37 @@ def main(): #sender, to, subject, message_text, attach_file_path, cc=None):
     messages = list_message(service, "me")
 
     if messages[0]['subject'] == "地図取得":
-        #特定の件名だったら翔んで埼玉or千葉
+        #特定の件名だったら埼玉or千葉
         address = messages[0]['body']
         print(address)
+
+        #pngをpdfに変換する
+        input1 = "screen1.png"
+        input2 = "screen2.png"
+        output = "output_send.pdf"
+        convert2pdf(output,input1,input2)
+
+
+        #メール送信準備
         sender = "nozomi.shimonishi@gmail.com" #<<<インターンの共通アカウントを入れる
-        to = messages[0]['from']
+        to = messages[0]['from'] #<<<送り返す
         subject = "Re:地図取得"
         message_text = messages[0]['body']
-        attach_file_path = "output.pdf" #<<<ここにスクショをPDFに変換したものを入れる
+        attach_file_path =  os.path.abspath("./"+output) #<<<ここにスクショをPDFに変換したものを入れる（相対パスを入力する！！！！）
         message = create_message_with_attachment(
             sender, to, subject, message_text, attach_file_path, cc=None
         )
         # メール送信
+        if attach_file_path:
+        # メール本文の作成
+            message = create_message_with_attachment(
+            sender, to, subject, message_text, attach_file_path, cc=None
+        )
+        else:
+            message = create_message(
+                sender, to, subject, message_text, cc=None
+            )
         send_message(service, "me", message)
-
-
     else:
         #特定の件名じゃなかったら既読にして終わり
         unread_label_ids = [label["id"] for label in labels if label["name"] == "UNREAD"]
