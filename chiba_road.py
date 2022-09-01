@@ -19,6 +19,9 @@ from selenium.webdriver.support.select import Select
 
 
 def chiba_road(driver,ku,chou,banchi):
+    # TypeError
+    can_not = False
+
     # File Name
     FILENAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image_chiba_road/screen.png")
 
@@ -36,12 +39,22 @@ def chiba_road(driver,ku,chou,banchi):
 
     dropdown_1 = driver.find_element(By.ID, 'srh_search_drilldown_1_attrvalue_1')
     select_1 = Select(dropdown_1)
-    select_1.select_by_visible_text(ku)  # 3番目のoptionタグを選択状態に
+    try:
+        select_1.select_by_visible_text(ku)  # 3番目のoptionタグを選択状態に
+    except TypeError:
+        driver.quit()
+        can_not = True
+        return can_not
     time.sleep(2)
 
     dropdown_2 = driver.find_element(By.ID, "srh_search_drilldown_1_attrvalue_2")
     select_2 = Select(dropdown_2)
-    select_2.select_by_visible_text(chou)
+    try:
+        select_2.select_by_visible_text(chou)
+    except TypeError:
+        driver.quit()
+        can_not = True
+        return can_not
 
     time.sleep(2)
 
@@ -49,7 +62,13 @@ def chiba_road(driver,ku,chou,banchi):
         dropdown_3 = driver.find_element(By.ID, "srh_search_drilldown_1_attrvalue_3")
         select_3 = Select(dropdown_3)
         chou = banchi
-        select_3.select_by_visible_text(chou)
+        try:
+            select_3.select_by_visible_text(chou)
+        except TypeError:
+            can_not = True
+            # Close Web Browser
+            driver.quit()
+            return can_not
         time.sleep(2)
 
     element = driver.find_element(By.ID, 'srh_search_drilldown_1_btn').click()
@@ -75,6 +94,8 @@ def chiba_road(driver,ku,chou,banchi):
     
     # Close Web Browser
     driver.quit()
+
+    return can_not
 
 
 chiba_road(driver,"美浜区","磯辺２丁目","1")
