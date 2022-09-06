@@ -12,9 +12,10 @@ def create_htmlmessage(sender, to, subject, message_text):#MIMEText を base64 �
     <html>
         <head></head>
         <body>
-            <p style='font-size:20.0pt;font-family:游ゴシック'>"""
+            <p style='font-size:20.0pt;font-family:Meiryo'>"""
     html += message_text
     html += """</p>
+            <p style 0 'font-size:10.0pt; font-family:Meiryo; color:#ff4500'>対象地域は千葉市かさいたま市のみです。</p>
     </html>
     """
 
