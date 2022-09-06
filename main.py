@@ -26,7 +26,7 @@ import slackweb
 
 service = Service(executable_path=ChromeDriverManager().install())
 logger = logging.getLogger(__name__)
-slack = slackweb.Slack(url="https://hooks.slack.com/services/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")
+slack = slackweb.Slack(url="")
 
 def main():
     creds = get_credential()
